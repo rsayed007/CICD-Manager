@@ -15,49 +15,47 @@
     <!-- Configuration -->
     <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-xl font-semibold mb-4 border-b pb-2">Deployment Configuration</h2>
+        
+        <!-- Repository Selector -->
+        @if($repositories->count() > 0)
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Select Repository Source</label>
+            <select onchange="window.location.href='?repo='+this.value" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                @foreach($repositories as $repo)
+                    <option value="{{ $repo }}" {{ $selectedRepo == $repo ? 'selected' : '' }}>{{ $repo }}</option>
+                @endforeach
+            </select>
+            @if(empty($repositoryTree))
+                <p class="text-red-500 text-xs mt-1">Repository empty or structure not found. Sync the repository first.</p>
+            @endif
+        </div>
+        @else
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+                <p class="font-bold">No Repositories Found</p>
+                <p class="text-sm">Please go to <a href="{{ route('repositories.index') }}" class="underline">Repository Manager</a> to add and sync a repository first.</p>
+            </div>
+        @endif
+
         <form action="{{ route('servers.config.update', $server) }}" method="POST">
             @csrf
             
-            <!-- <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Directories (One per line)</label>
-                <textarea name="directories[]" class="w-full shadow border rounded p-2 h-32 font-mono text-sm" placeholder="src/app&#10;config/">{{ implode("\n", $server->directories->pluck('path')->toArray()) }}</textarea>
-                <p class="text-xs text-gray-500 mt-1">Paths will be recursive copied using rsync/scp.</p>
-            </div> -->
-            <!-- Hack to handle array input from textarea by splitting in controller or simple JS? 
-                 Controller expects array. Let's simpler: use a textarea and split in JS on submit or use multiple inputs.
-                 Wait, standard form submit with name="directories[]" only works for multiple inputs. 
-                 Let's use a small script to allow adding inputs or just one big textarea and parse in controller? 
-                 Controller logic I wrote expects `directories` array.
-                 Let's stick to the controller logic: "foreach $request->directories".
-                 If I use textarea, I need to split it.
-                 Let's update the View to have dynamic inputs or just change Controller to explode newline? 
-                 Controller modification is safer/easier than dynamic JS inputs for now.
-                 BUT I cannot change controller easily now without rewriting tool.
-                 I'll usage AlpineJS to handle the list UI.
-            -->
-
-            <!-- Redoing UI for Directories with AlpineJS -->
-             <div class="mb-4" x-data="{ paths: {{ $server->directories->pluck('path') }} }">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Directories</label>
-                <template x-for="(path, index) in paths" :key="index">
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" name="directories[]" x-model="paths[index]" class="shadow appearance-none border rounded w-full py-1 px-2 text-sm">
-                        <button type="button" @click="paths.splice(index, 1)" class="text-red-500 hover:text-red-700">&times;</button>
-                    </div>
-                </template>
-                <button type="button" @click="paths.push('')" class="text-blue-500 text-sm">+ Add Directory</button>
-                <!-- If empty, add hidden input to clear? No, controller deletes all first. -->
-            </div>
-
-            <div class="mb-4" x-data="{ files: {{ $server->deployFiles->pluck('path') }} }">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Files</label>
-                <template x-for="(file, index) in files" :key="index">
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" name="files_list[]" x-model="files[index]" class="shadow appearance-none border rounded w-full py-1 px-2 text-sm">
-                        <button type="button" @click="files.splice(index, 1)" class="text-red-500 hover:text-red-700">&times;</button>
-                    </div>
-                </template>
-                <button type="button" @click="files.push('')" class="text-blue-500 text-sm">+ Add File</button>
+            <div class="mb-4 h-96 overflow-y-auto border rounded p-4 bg-gray-50">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Select Files & Directories</h3>
+                
+                @if(!empty($repositoryTree))
+                    <ul class="text-sm">
+                        @foreach($repositoryTree as $name => $node)
+                            <x-file-tree-node 
+                                :name="$name" 
+                                :node="$node" 
+                                :selectedDirs="$server->directories->pluck('path')->toArray()"
+                                :selectedFiles="$server->deployFiles->pluck('path')->toArray()"
+                            />
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-gray-500 text-center italic mt-10">No repository structure available.</p>
+                @endif
             </div>
 
             <div class="mt-6 flex justify-between">

@@ -18,7 +18,7 @@ class GitRepositoryService
     /**
      * Parse repository URL and initialize service
      */
-    public function __construct(string $repoUrl, ?string $token = null)
+    public function __construct(?string $repoUrl = null, ?string $token = null)
     {
         $this->token = $token;
         $this->parseRepoUrl($repoUrl);
@@ -27,7 +27,7 @@ class GitRepositoryService
     /**
      * Parse repository URL to determine platform and API endpoint
      */
-    protected function parseRepoUrl(string $repoUrl): void
+    protected function parseRepoUrl(?string $repoUrl): void
     {
         // Detect platform from URL
         if (str_contains($repoUrl, 'github.com')) {
@@ -41,7 +41,7 @@ class GitRepositoryService
             $this->platform = 'generic';
         }
 
-        $this->apiUrl = $repoUrl;
+        $this->apiUrl = $repoUrl?? 'github.com';
     }
 
     /**

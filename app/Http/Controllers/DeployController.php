@@ -9,14 +9,17 @@ use App\Models\WorkflowLog;
 use App\Services\GitHubService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Services\GitRepositoryService;
 
 class DeployController extends Controller
 {
     protected $github;
+    protected $gitService;
 
-    public function __construct(GitHubService $github)
+    public function __construct(GitHubService $github, GitRepositoryService $gitService)
     {
         $this->github = $github;
+        $this->gitService = $gitService;
     }
 
     // Dashboard: List servers
@@ -27,13 +30,24 @@ class DeployController extends Controller
     }
 
     // Server Details: Config & History
-    public function show(Server $server)
+    public function show(Server $server, Request $request)
     {
         $server->load(['directories', 'deployFiles', 'workflowLogs' => function($q) {
             $q->latest()->limit(10);
         }]);
+
+        // Fetch Repositories
+        $repositories = \App\Models\RepositoryFile::select('repo_name')->distinct()->pluck('repo_name');
         
-        return view('server.show', compact('server'));
+        // Determine selected repo (default to first or from request)
+        $selectedRepo = $request->get('repo', $repositories->first());
+        
+        $repositoryTree = [];
+        if ($selectedRepo) {
+            $repositoryTree = $this->gitService->buildDirectoryTree($selectedRepo);
+        }
+        
+        return view('server.show', compact('server', 'repositories', 'selectedRepo', 'repositoryTree'));
     }
 
     // Store new server
