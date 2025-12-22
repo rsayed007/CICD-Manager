@@ -9,20 +9,25 @@ use App\Models\Server;
 use App\Services\GitHubService;
 use Mockery;
 
+use App\Models\User;
+
 class CicdBotTest extends TestCase
 {
     use RefreshDatabase;
 
     public function test_can_view_dashboard()
     {
-        $response = $this->get('/');
+        $user = User::factory()->create();
+        $response = $this->actingAs($user)->get('/');
+        
         $response->assertStatus(200);
         $response->assertSee('Deployment Servers');
     }
 
     public function test_can_create_server()
     {
-        $response = $this->post('/servers', [
+        $user = User::factory()->create();
+        $response = $this->actingAs($user)->post('/servers', [
             'name' => 'Test Server',
             'ip_address' => '127.0.0.1',
             'username' => 'root',
@@ -37,12 +42,12 @@ class CicdBotTest extends TestCase
         $this->assertDatabaseHas('servers', [
             'name' => 'Test Server',
             'github_token' => 'ghp_secretToken',
-             // 'is_active' => true // logic handles checkboxes, db defaults to true but check controller logic
         ]);
     }
 
     public function test_can_update_config()
     {
+        $user = User::factory()->create();
         $server = Server::create([
             'name' => 'Test Server',
             'ip_address' => '127.0.0.1',
@@ -50,7 +55,7 @@ class CicdBotTest extends TestCase
             'deploy_path' => '/var/www/test',
         ]);
 
-        $response = $this->post("/servers/{$server->id}/config", [
+        $response = $this->actingAs($user)->post("/servers/{$server->id}/config", [
             'directories' => ['src/', 'config/'],
             'files_list' => ['readme.md'],
         ]);
@@ -63,6 +68,7 @@ class CicdBotTest extends TestCase
 
     public function test_can_simulate_deployment()
     {
+        $user = User::factory()->create();
         $server = Server::create([
             'name' => 'Sim Server',
             'ip_address' => '1.2.3.4',
@@ -72,7 +78,7 @@ class CicdBotTest extends TestCase
         
         $server->directories()->create(['path' => 'dir1']);
 
-        $response = $this->get("/servers/{$server->id}/simulate");
+        $response = $this->actingAs($user)->get("/servers/{$server->id}/simulate");
         
         $response->assertStatus(200);
         $json = $response->json();
@@ -82,6 +88,7 @@ class CicdBotTest extends TestCase
 
     public function test_can_update_server_details()
     {
+        $user = User::factory()->create();
         $server = Server::create([
             'name' => 'Old Name',
             'ip_address' => '1.1.1.1',
@@ -90,13 +97,13 @@ class CicdBotTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->put(route('servers.update', $server), [
+        $response = $this->actingAs($user)->put(route('servers.update', $server), [
             'name' => 'New Name',
             'ip_address' => '1.1.1.1',
             'username' => 'user',
             'deploy_path' => '/var/www',
             'github_token' => 'new-token',
-            'is_active' => 'on', // Checkbox sends 'on' or present
+            'is_active' => 'on',
         ]);
 
         $response->assertRedirect();
