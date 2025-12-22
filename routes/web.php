@@ -6,6 +6,7 @@ use App\Http\Controllers\RepositoryWebController;
 
 Route::get('/', [DeployController::class, 'index'])->name('dashboard');
 Route::post('/servers', [DeployController::class, 'store'])->name('servers.store');
+Route::put('/servers/{server}', [DeployController::class, 'update'])->name('servers.update');
 Route::get('/servers/{server}', [DeployController::class, 'show'])->name('servers.show');
 Route::post('/servers/{server}/config', [DeployController::class, 'updateConfig'])->name('servers.config.update');
 Route::post('/servers/{server}/trigger', [DeployController::class, 'trigger'])->name('servers.trigger');
