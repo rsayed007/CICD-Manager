@@ -76,7 +76,7 @@ class GitRepositoryService
         $urlParts = parse_url($this->apiUrl);
         $pathParts = explode('/', trim($urlParts['path'] ?? '', '/'));
         
-        if (count($pathParts) >= 4 && $pathParts[0] === 'repos') {
+        if (count($pathParts) >= 3 && $pathParts[0] === 'repos') {
             $owner = $pathParts[1];
             $repo = $pathParts[2];
         } else {

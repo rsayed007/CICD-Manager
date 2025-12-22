@@ -81,7 +81,7 @@
                     @endif
 
                     <div class="text-xs text-gray-500 mb-4">
-                        Last updated: {{ $repo->last_updated->diffForHumans() }}
+                        Last updated: {{ $repo->last_updated }}
                     </div>
 
                     <div class="flex gap-2">
