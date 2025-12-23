@@ -3,10 +3,18 @@
 @section('content')
 <div class="mb-6 flex justify-between items-center">
     <div>
-        <h1 class="text-3xl font-bold text-gray-800">{{ $server->name }}</h1>
+        <div class="flex items-center gap-3">
+             <h1 class="text-3xl font-bold text-gray-800">{{ $server->name }}</h1>
+             @if($server->is_active)
+                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">Active</span>
+             @else
+                <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded font-bold">Inactive</span>
+             @endif
+        </div>
         <p class="text-gray-600">{{ $server->username }}@<span class="font-mono">{{ $server->ip_address }}</span>:{{ $server->deploy_path }}</p>
     </div>
     <div class="flex gap-2">
+        <button onclick="document.getElementById('edit-server-modal').classList.remove('hidden')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Edit Settings</button>
         <a href="{{ route('dashboard') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Back</a>
     </div>
 </div>
@@ -15,49 +23,47 @@
     <!-- Configuration -->
     <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-xl font-semibold mb-4 border-b pb-2">Deployment Configuration</h2>
+        
+        <!-- Repository Selector -->
+        @if($repositories->count() > 0)
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Select Repository Source</label>
+            <select onchange="window.location.href='?repo='+this.value" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                @foreach($repositories as $repo)
+                    <option value="{{ $repo }}" {{ $selectedRepo == $repo ? 'selected' : '' }}>{{ $repo }}</option>
+                @endforeach
+            </select>
+            @if(empty($repositoryTree))
+                <p class="text-red-500 text-xs mt-1">Repository empty or structure not found. Sync the repository first.</p>
+            @endif
+        </div>
+        @else
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+                <p class="font-bold">No Repositories Found</p>
+                <p class="text-sm">Please go to <a href="{{ route('repositories.index') }}" class="underline">Repository Manager</a> to add and sync a repository first.</p>
+            </div>
+        @endif
+
         <form action="{{ route('servers.config.update', $server) }}" method="POST">
             @csrf
             
-            <!-- <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Directories (One per line)</label>
-                <textarea name="directories[]" class="w-full shadow border rounded p-2 h-32 font-mono text-sm" placeholder="src/app&#10;config/">{{ implode("\n", $server->directories->pluck('path')->toArray()) }}</textarea>
-                <p class="text-xs text-gray-500 mt-1">Paths will be recursive copied using rsync/scp.</p>
-            </div> -->
-            <!-- Hack to handle array input from textarea by splitting in controller or simple JS? 
-                 Controller expects array. Let's simpler: use a textarea and split in JS on submit or use multiple inputs.
-                 Wait, standard form submit with name="directories[]" only works for multiple inputs. 
-                 Let's use a small script to allow adding inputs or just one big textarea and parse in controller? 
-                 Controller logic I wrote expects `directories` array.
-                 Let's stick to the controller logic: "foreach $request->directories".
-                 If I use textarea, I need to split it.
-                 Let's update the View to have dynamic inputs or just change Controller to explode newline? 
-                 Controller modification is safer/easier than dynamic JS inputs for now.
-                 BUT I cannot change controller easily now without rewriting tool.
-                 I'll usage AlpineJS to handle the list UI.
-            -->
-
-            <!-- Redoing UI for Directories with AlpineJS -->
-             <div class="mb-4" x-data="{ paths: {{ $server->directories->pluck('path') }} }">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Directories</label>
-                <template x-for="(path, index) in paths" :key="index">
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" name="directories[]" x-model="paths[index]" class="shadow appearance-none border rounded w-full py-1 px-2 text-sm">
-                        <button type="button" @click="paths.splice(index, 1)" class="text-red-500 hover:text-red-700">&times;</button>
-                    </div>
-                </template>
-                <button type="button" @click="paths.push('')" class="text-blue-500 text-sm">+ Add Directory</button>
-                <!-- If empty, add hidden input to clear? No, controller deletes all first. -->
-            </div>
-
-            <div class="mb-4" x-data="{ files: {{ $server->deployFiles->pluck('path') }} }">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Files</label>
-                <template x-for="(file, index) in files" :key="index">
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" name="files_list[]" x-model="files[index]" class="shadow appearance-none border rounded w-full py-1 px-2 text-sm">
-                        <button type="button" @click="files.splice(index, 1)" class="text-red-500 hover:text-red-700">&times;</button>
-                    </div>
-                </template>
-                <button type="button" @click="files.push('')" class="text-blue-500 text-sm">+ Add File</button>
+            <div class="mb-4 h-96 overflow-y-auto border rounded p-4 bg-gray-50">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Select Files & Directories</h3>
+                
+                @if(!empty($repositoryTree))
+                    <ul class="text-sm">
+                        @foreach($repositoryTree as $name => $node)
+                            <x-file-tree-node 
+                                :name="$name" 
+                                :node="$node" 
+                                :selectedDirs="$server->directories->pluck('path')->toArray()"
+                                :selectedFiles="$server->deployFiles->pluck('path')->toArray()"
+                            />
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-gray-500 text-center italic mt-10">No repository structure available.</p>
+                @endif
             </div>
 
             <div class="mt-6 flex justify-between">
@@ -72,13 +78,20 @@
         <!-- Deployment Action -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold mb-4 border-b pb-2">Actions</h2>
-            <form action="{{ route('servers.trigger', $server) }}" method="POST" onsubmit="return confirm('Are you sure you want to trigger a deployment to {{ $server->name }}?');">
-                @csrf
-                <p class="text-gray-600 mb-4">Trigger GitHub Action deployment workflow.</p>
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded flex justify-center items-center gap-2">
-                    🚀 Deploy to Production
-                </button>
-            </form>
+            
+            @if($server->is_active)
+                <form action="{{ route('servers.trigger', $server) }}" method="POST" onsubmit="return confirm('Are you sure you want to trigger a deployment to {{ $server->name }}?');">
+                    @csrf
+                    <p class="text-gray-600 mb-4">Trigger GitHub Action deployment workflow.</p>
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded flex justify-center items-center gap-2">
+                        🚀 Deploy to Production
+                    </button>
+                </form>
+            @else
+                 <div class="bg-gray-100 p-4 rounded text-center text-gray-500">
+                    <p>Deployment is disabled because this server is inactive.</p>
+                 </div>
+            @endif
         </div>
 
         <!-- Log History -->
@@ -98,6 +111,72 @@
                 <p class="text-gray-500 text-sm">No deployment history found.</p>
                 @endforelse
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Server Modal -->
+<div id="edit-server-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Edit Server Settings</h3>
+            <form action="{{ route('servers.update', $server) }}" method="POST" class="text-left">
+                @csrf
+                @method('PUT')
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+                        <input type="text" name="name" value="{{ $server->name }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">IP Address</label>
+                        <input type="text" name="ip_address" value="{{ $server->ip_address }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                        <input type="text" name="username" value="{{ $server->username }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Deploy Path</label>
+                        <input type="text" name="deploy_path" value="{{ $server->deploy_path }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">SSH Key Path</label>
+                    <input type="text" name="ssh_key_path" value="{{ $server->ssh_key_path }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+
+                <hr class="my-4 border-gray-200">
+                <h4 class="text-sm font-bold text-gray-500 uppercase mb-2">GitHub Configuration</h4>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">GitHub Owner</label>
+                        <input type="text" name="github_owner" value="{{ $server->github_owner }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">GitHub Repo</label>
+                        <input type="text" name="github_repo" value="{{ $server->github_repo }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">GitHub Token</label>
+                    <input type="password" name="github_token" value="{{ $server->github_token }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Leave blank to keep unchanged">
+                </div>
+
+                <div class="mb-4">
+                   <label class="inline-flex items-center">
+                        <input type="checkbox" name="is_active" class="form-checkbox h-5 w-5 text-blue-600" {{ $server->is_active ? 'checked' : '' }}>
+                        <span class="ml-2 text-gray-700">Server is Active</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" onclick="document.getElementById('edit-server-modal').classList.add('hidden')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Update Settings</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

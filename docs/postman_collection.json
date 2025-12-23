@@ -1,0 +1,424 @@
+{
+    "info": {
+        "name": "Git Repository Monitoring API",
+        "description": "Complete API collection for Git repository monitoring with change detection",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Repository Management",
+            "item": [
+                {
+                    "name": "Sync Repository",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"repo_url\": \"https://api.github.com/repos/laravel/framework\",\n  \"repo_name\": \"laravel-framework\",\n  \"branch\": \"11.x\",\n  \"token\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/sync",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "sync"
+                            ]
+                        },
+                        "description": "Sync repository from Git API and detect all changes"
+                    }
+                },
+                {
+                    "name": "Get Repository Structure",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/structure",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "structure"
+                            ]
+                        },
+                        "description": "Get complete directory tree for a repository"
+                    }
+                },
+                {
+                    "name": "Get All Changes",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/changes",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "changes"
+                            ]
+                        },
+                        "description": "Get all files with changes (new, modified, or deleted)"
+                    }
+                },
+                {
+                    "name": "Get New Files",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/changes?status=new",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "changes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "new"
+                                }
+                            ]
+                        },
+                        "description": "Get only newly added files"
+                    }
+                },
+                {
+                    "name": "Get Modified Files",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/changes?status=modified",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "changes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "modified"
+                                }
+                            ]
+                        },
+                        "description": "Get only modified files"
+                    }
+                },
+                {
+                    "name": "Get Deleted Files",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/changes?status=deleted",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "changes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "deleted"
+                                }
+                            ]
+                        },
+                        "description": "Get only deleted files"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Notifications",
+            "item": [
+                {
+                    "name": "Get All Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/notifications",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "notifications"
+                            ]
+                        },
+                        "description": "Get all notifications for a repository"
+                    }
+                },
+                {
+                    "name": "Get Unsent Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/notifications?sent=false",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sent",
+                                    "value": "false"
+                                }
+                            ]
+                        },
+                        "description": "Get notifications that haven't been sent yet"
+                    }
+                },
+                {
+                    "name": "Get Email Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/notifications?type=email",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "email"
+                                }
+                            ]
+                        },
+                        "description": "Get only email notifications"
+                    }
+                },
+                {
+                    "name": "Get UI Alert Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/notifications?type=ui_alert",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "ui_alert"
+                                }
+                            ]
+                        },
+                        "description": "Get only UI alert notifications"
+                    }
+                },
+                {
+                    "name": "Get New File Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/notifications?change_type=new",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "change_type",
+                                    "value": "new"
+                                }
+                            ]
+                        },
+                        "description": "Get notifications for new files only"
+                    }
+                },
+                {
+                    "name": "Mark Notification as Sent",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/notifications/{{notification_id}}/mark-sent",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "notifications",
+                                "{{notification_id}}",
+                                "mark-sent"
+                            ]
+                        },
+                        "description": "Mark a specific notification as sent"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Sync Logs",
+            "item": [
+                {
+                    "name": "Get All Sync Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/sync-logs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "sync-logs"
+                            ]
+                        },
+                        "description": "Get all sync operation logs"
+                    }
+                },
+                {
+                    "name": "Get Completed Syncs",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/sync-logs?status=completed",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "sync-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "completed"
+                                }
+                            ]
+                        },
+                        "description": "Get only completed sync operations"
+                    }
+                },
+                {
+                    "name": "Get Failed Syncs",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/sync-logs?status=failed",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "sync-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "failed"
+                                }
+                            ]
+                        },
+                        "description": "Get only failed sync operations"
+                    }
+                },
+                {
+                    "name": "Get Latest Sync",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/repositories/{{repo_name}}/latest-sync",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "repositories",
+                                "{{repo_name}}",
+                                "latest-sync"
+                            ]
+                        },
+                        "description": "Get the most recent sync operation status"
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000",
+            "type": "string"
+        },
+        {
+            "key": "repo_name",
+            "value": "laravel-framework",
+            "type": "string"
+        },
+        {
+            "key": "notification_id",
+            "value": "1",
+            "type": "string"
+        }
+    ]
+}

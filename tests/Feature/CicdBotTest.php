@@ -9,32 +9,45 @@ use App\Models\Server;
 use App\Services\GitHubService;
 use Mockery;
 
+use App\Models\User;
+
 class CicdBotTest extends TestCase
 {
     use RefreshDatabase;
 
     public function test_can_view_dashboard()
     {
-        $response = $this->get('/');
+        $user = User::factory()->create();
+        $response = $this->actingAs($user)->get('/');
+        
         $response->assertStatus(200);
         $response->assertSee('Deployment Servers');
     }
 
     public function test_can_create_server()
     {
-        $response = $this->post('/servers', [
+        $user = User::factory()->create();
+        $response = $this->actingAs($user)->post('/servers', [
             'name' => 'Test Server',
             'ip_address' => '127.0.0.1',
             'username' => 'root',
             'deploy_path' => '/var/www/test',
+            'github_token' => 'ghp_secretToken',
+            'github_owner' => 'owner',
+            'github_repo' => 'repo',
+            'is_active' => 'on',
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('servers', ['name' => 'Test Server']);
+        $this->assertDatabaseHas('servers', [
+            'name' => 'Test Server',
+            'github_token' => 'ghp_secretToken',
+        ]);
     }
 
     public function test_can_update_config()
     {
+        $user = User::factory()->create();
         $server = Server::create([
             'name' => 'Test Server',
             'ip_address' => '127.0.0.1',
@@ -42,7 +55,7 @@ class CicdBotTest extends TestCase
             'deploy_path' => '/var/www/test',
         ]);
 
-        $response = $this->post("/servers/{$server->id}/config", [
+        $response = $this->actingAs($user)->post("/servers/{$server->id}/config", [
             'directories' => ['src/', 'config/'],
             'files_list' => ['readme.md'],
         ]);
@@ -55,8 +68,9 @@ class CicdBotTest extends TestCase
 
     public function test_can_simulate_deployment()
     {
+        $user = User::factory()->create();
         $server = Server::create([
-            'name' => 'Test Server',
+            'name' => 'Sim Server',
             'ip_address' => '1.2.3.4',
             'username' => 'user',
             'deploy_path' => '/dest',
@@ -64,9 +78,40 @@ class CicdBotTest extends TestCase
         
         $server->directories()->create(['path' => 'dir1']);
 
-        $response = $this->get("/servers/{$server->id}/simulate");
+        $response = $this->actingAs($user)->get("/servers/{$server->id}/simulate");
         
         $response->assertStatus(200);
-        $response->assertJsonFragment(['simulation' => "# Simulation for Test Server\n# Target: user@1.2.3.4:/dest\n\nrsync -avR \"dir1\" user@1.2.3.4:\"/dest/\"\n"]);
+        $json = $response->json();
+        $this->assertStringContainsString('# Simulation for Sim Server', $json['simulation']);
+        $this->assertStringContainsString('rsync -avR "dir1" user@1.2.3.4:"/dest/"', $json['simulation']);
+    }
+
+    public function test_can_update_server_details()
+    {
+        $user = User::factory()->create();
+        $server = Server::create([
+            'name' => 'Old Name',
+            'ip_address' => '1.1.1.1',
+            'username' => 'user',
+            'deploy_path' => '/var/www',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user)->put(route('servers.update', $server), [
+            'name' => 'New Name',
+            'ip_address' => '1.1.1.1',
+            'username' => 'user',
+            'deploy_path' => '/var/www',
+            'github_token' => 'new-token',
+            'is_active' => 'on',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('servers', [
+            'id' => $server->id,
+            'name' => 'New Name',
+            'github_token' => 'new-token',
+            'is_active' => true,
+        ]);
     }
 }

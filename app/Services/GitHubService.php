@@ -7,20 +7,41 @@ use App\Models\Server;
 
 class GitHubService
 {
-    protected $owner;
-    protected $repo;
-    protected $token;
+    // Fallback credentials from env
+    protected $defaultOwner;
+    protected $defaultRepo;
+    protected $defaultToken;
 
     public function __construct()
     {
-        $this->owner = env('GITHUB_OWNER');
-        $this->repo = env('GITHUB_REPO');
-        $this->token = env('GITHUB_TOKEN');
+        $this->defaultOwner = env('GITHUB_OWNER');
+        $this->defaultRepo = env('GITHUB_REPO');
+        $this->defaultToken = env('GITHUB_TOKEN');
+    }
+
+    /**
+     * Helper to get effective credentials for a server
+     */
+    protected function getCredentials(Server $server = null)
+    {
+        return [
+            'owner' => $server && $server->github_owner ? $server->github_owner : $this->defaultOwner,
+            'repo' => $server && $server->github_repo ? $server->github_repo : $this->defaultRepo,
+            'token' => $server && $server->github_token ? $server->github_token : $this->defaultToken,
+        ];
     }
 
     public function triggerDeployment(Server $server, array $payload = [])
     {
-        $url = "https://api.github.com/repos/{$this->owner}/{$this->repo}/dispatches";
+        $creds = $this->getCredentials($server);
+        if (!$creds['owner'] || !$creds['repo'] || !$creds['token']) {
+             return [
+                'status' => 'error',
+                'message' => 'GitHub credentials missing for this server.'
+            ];
+        }
+
+        $url = "https://api.github.com/repos/{$creds['owner']}/{$creds['repo']}/dispatches";
 
         // Merge server info into client_payload
         $data = [
@@ -29,13 +50,10 @@ class GitHubService
                 "server" => $server->name,
                 "server_ip" => $server->ip_address,
                 "ssh_key" => $server->ssh_key_path,
-                // We might need to send the directories/files list too if dynamic
-                // "directories" => $server->directories->pluck('path'),
-                // "files" => $server->deployFiles->pluck('path'),
             ], $payload)
         ];
 
-        $response = Http::withToken($this->token)
+        $response = Http::withToken($creds['token'])
             ->accept('application/vnd.github.v3+json')
             ->post($url, $data);
 
@@ -50,11 +68,18 @@ class GitHubService
         return $result;
     }
 
-    public function getWorkflowRuns()
+    // Workflow fetching methods usually need a context (repo). 
+    // If the controller uses them generically, we might need to pass the Server or Repo details.
+    // For now, assuming these might be used in a context where we know the repo, 
+    // OR we change signatures to accept Server.
+    
+    // Let's update signatures to be robust, optionally accepting Server.
+    public function getWorkflowRuns(Server $server = null)
     {
-        $url = "https://api.github.com/repos/{$this->owner}/{$this->repo}/actions/runs";
+        $creds = $this->getCredentials($server);
+        $url = "https://api.github.com/repos/{$creds['owner']}/{$creds['repo']}/actions/runs";
         
-        $response = Http::withToken($this->token)
+        $response = Http::withToken($creds['token'])
             ->accept('application/vnd.github.v3+json')
             ->get($url);
 
@@ -69,20 +94,23 @@ class GitHubService
         return $result;
     }
 
-    public function getWorkflowRun($runId)
+    public function getWorkflowRun($runId, Server $server = null)
     {
-        $url = "https://api.github.com/repos/{$this->owner}/{$this->repo}/actions/runs/{$runId}";
+        $creds = $this->getCredentials($server);
+        $url = "https://api.github.com/repos/{$creds['owner']}/{$creds['repo']}/actions/runs/{$runId}";
         
-        return Http::withToken($this->token)
+        $response = Http::withToken($creds['token'])
             ->accept('application/vnd.github.v3+json')
             ->get($url);
+        return $response;
     }
     
-    public function getWorkflowJobs($runId)
+    public function getWorkflowJobs($runId, Server $server = null)
     {
-        $url = "https://api.github.com/repos/{$this->owner}/{$this->repo}/actions/runs/{$runId}/jobs";
+        $creds = $this->getCredentials($server);
+        $url = "https://api.github.com/repos/{$creds['owner']}/{$creds['repo']}/actions/runs/{$runId}/jobs";
         
-        return Http::withToken($this->token)
+        return Http::withToken($creds['token'])
             ->accept('application/vnd.github.v3+json')
             ->get($url);
     }

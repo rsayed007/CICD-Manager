@@ -7,16 +7,19 @@ use App\Models\Directory;
 use App\Models\DeployFile;
 use App\Models\WorkflowLog;
 use App\Services\GitHubService;
+use App\Services\GitRepositoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class DeployController extends Controller
 {
     protected $github;
+    protected $gitService;
 
-    public function __construct(GitHubService $github)
+    public function __construct(GitHubService $github, GitRepositoryService $gitService)
     {
         $this->github = $github;
+        $this->gitService = $gitService;
     }
 
     // Dashboard: List servers
@@ -27,13 +30,24 @@ class DeployController extends Controller
     }
 
     // Server Details: Config & History
-    public function show(Server $server)
+    public function show(Server $server, Request $request)
     {
         $server->load(['directories', 'deployFiles', 'workflowLogs' => function($q) {
             $q->latest()->limit(10);
         }]);
+
+        // Fetch Repositories
+        $repositories = \App\Models\RepositoryFile::select('repo_name')->distinct()->pluck('repo_name');
         
-        return view('server.show', compact('server'));
+        // Determine selected repo (default to first or from request)
+        $selectedRepo = $request->get('repo', $repositories->first());
+        
+        $repositoryTree = [];
+        if ($selectedRepo) {
+            $repositoryTree = $this->gitService->buildDirectoryTree($selectedRepo);
+        }
+        
+        return view('server.show', compact('server', 'repositories', 'selectedRepo', 'repositoryTree'));
     }
 
     // Store new server
@@ -45,10 +59,39 @@ class DeployController extends Controller
             'username' => 'required',
             'deploy_path' => 'required',
             'ssh_key_path' => 'nullable',
+            'github_token' => 'nullable|string',
+            'github_owner' => 'nullable|string',
+            'github_repo' => 'nullable|string',
+            'is_active' => 'nullable',
         ]);
+
+        // checkbox logic
+        $data['is_active'] = $request->has('is_active');
 
         Server::create($data);
         return redirect()->back()->with('success', 'Server added successfully.');
+    }
+
+    // Update Server Details
+    public function update(Request $request, Server $server)
+    {
+        $data = $request->validate([
+            'name' => 'required',
+            'ip_address' => 'required',
+            'username' => 'required',
+            'deploy_path' => 'required',
+            'ssh_key_path' => 'nullable',
+            'github_token' => 'nullable|string',
+            'github_owner' => 'nullable|string',
+            'github_repo' => 'nullable|string',
+            'is_active' => 'nullable', // handled manually
+        ]);
+
+        $data['is_active'] = $request->has('is_active');
+
+        $server->update($data);
+
+        return redirect()->back()->with('success', 'Server updated successfully.');
     }
 
     // Update Server Config (Dirs/Files)
@@ -82,6 +125,10 @@ class DeployController extends Controller
     // Trigger Deployment
     public function trigger(Server $server)
     {
+        if (!$server->is_active) {
+            return redirect()->back()->with('error', 'Cannot trigger deployment. Server is inactive.');
+        }
+
         // 1. Prepare Payload
         // We might want to pass dynamic config, but usually the workflow reads from DB or we pass it.
         // The user's workflow read from yq deploy_map.yml. 
@@ -104,16 +151,15 @@ class DeployController extends Controller
             // Trigger via Service
             $result = $this->github->triggerDeployment($server, $payload);
 
-            // Log it
-            // $server->workflowLogs()->create([
-            //     'status' => 'pending',
-            //     'logs' => 'Deployment triggered via GitHub API.',
-            // ]);
-            
-            if ($result['status'] == 'success') {
+            if ($result['status'] === 'success') {
+                // Log it
+                // $server->workflowLogs()->create([
+                //     'status' => 'pending',
+                //     'logs' => 'Deployment triggered via GitHub API.',
+                // ]);
                 return redirect()->back()->with('success', 'Deployment triggered!');
             } else {
-                return redirect()->back()->with('error', 'Failed to trigger deployment: ' . $result['message']);
+                 return redirect()->back()->with('error', $result['message']);
             }
 
         } catch (\Exception $e) {

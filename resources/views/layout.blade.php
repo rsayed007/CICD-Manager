@@ -12,6 +12,10 @@
         <div class="container mx-auto px-6 py-3">
             <div class="flex justify-between items-center">
                 <a href="{{ route('dashboard') }}" class="text-xl font-bold text-gray-800 hover:text-gray-700">CicdBot 🤖</a>
+                <div class="flex gap-6">
+                    <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-blue-600 font-medium">Servers</a>
+                    <a href="{{ route('repositories.index') }}" class="text-gray-700 hover:text-blue-600 font-medium">📦 Repositories</a>
+                </div>
             </div>
         </div>
     </nav>
