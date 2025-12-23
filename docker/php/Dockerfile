@@ -21,11 +21,14 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Copy PHP configuration
+COPY php.ini /usr/local/etc/php/conf.d/custom.ini
+
 # Set working directory
 WORKDIR /var/www
 
 # Copy existing application directory contents
-COPY . /var/www
+COPY ../../ /var/www
 
 # Install packages
 # RUN composer install --no-dev --optimize-autoloader

@@ -1,10 +1,10 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   app:
     build:
-      context: .
-      dockerfile: docker/php/Dockerfile
+      context: ./docker/php
+      dockerfile: Dockerfile
     container_name: cicd-app
     restart: unless-stopped
     working_dir: /var/www
@@ -27,25 +27,6 @@ services:
     networks:
       - cicd-network
 
-  db:
-    image: mysql:8.0
-    container_name: cicd-db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
-    volumes:
-      - dbdata:/var/lib/mysql
-    networks:
-      - cicd-network
-
 networks:
   cicd-network:
     driver: bridge
-
-volumes:
-  dbdata:
