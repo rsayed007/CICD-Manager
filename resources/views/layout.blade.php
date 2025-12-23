@@ -15,6 +15,7 @@
                 <div class="flex gap-6">
                     <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-blue-600 font-medium">Servers</a>
                     <a href="{{ route('repositories.index') }}" class="text-gray-700 hover:text-blue-600 font-medium">📦 Repositories</a>
+                    <a href="{{ route('users.index') }}" class="text-gray-700 hover:text-blue-600 font-medium">👥 Users</a>
                 </div>
             </div>
         </div>

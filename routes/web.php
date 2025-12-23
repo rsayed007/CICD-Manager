@@ -23,6 +23,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/servers/{server}/config', [DeployController::class, 'updateConfig'])->name('servers.config.update');
     Route::post('/servers/{server}/trigger', [DeployController::class, 'trigger'])->name('servers.trigger');
     Route::get('/servers/{server}/simulate', [DeployController::class, 'simulate'])->name('servers.simulate');
+    
+    // User Management
+    Route::resource('users', \App\Http\Controllers\UserController::class);
 
 // Repository Monitoring Routes
 Route::prefix('repositories')->name('repositories.')->group(function () {
