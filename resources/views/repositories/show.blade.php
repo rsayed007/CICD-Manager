@@ -14,9 +14,46 @@
             <p class="text-sm text-gray-600 font-mono">{{ $repository->repo_url }}</p>
         </div>
         <div class="flex gap-2">
-            <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
-                🔄 Refresh
+            <button onclick="openSyncModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                🔄 Resync
             </button>
+            <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
+                Reload Page
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Sync Confirmation Modal -->
+<div id="syncModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Sync Repository</h3>
+            <form action="{{ route('repositories.sync') }}" method="POST">
+                @csrf
+                <input type="hidden" name="repo_name" value="{{ $repoName }}">
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Repository URL</label>
+                    <input type="text" name="repo_url" value="{{ $repository->repo_url }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Branch</label>
+                    <input type="text" name="branch" value="main" placeholder="main" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">API Token</label>
+                    <input type="password" name="token" placeholder="GitHub/GitLab Token" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <p class="text-xs text-gray-500 mt-1">Leave empty to use default system credentials.</p>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6">
+                    <button type="button" onclick="closeSyncModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Sync Now</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -202,4 +239,23 @@
     </div>
 </div>
 @endif
+
+<script>
+    function openSyncModal() {
+        document.getElementById('syncModal').classList.remove('hidden');
+    }
+
+    function closeSyncModal() {
+        document.getElementById('syncModal').classList.add('hidden');
+    }
+
+    // Close modal if clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('syncModal');
+        if (event.target == modal) {
+            closeSyncModal();
+        }
+    }
+</script>
+
 @endsection

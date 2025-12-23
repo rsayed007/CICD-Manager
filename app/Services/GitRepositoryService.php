@@ -29,19 +29,37 @@ class GitRepositoryService
      */
     protected function parseRepoUrl(?string $repoUrl): void
     {
+        if (!$repoUrl) {
+            $this->apiUrl = 'github.com';
+            return;
+        }
+
         // Detect platform from URL
         if (str_contains($repoUrl, 'github.com')) {
             $this->platform = 'github';
+            
+            // Convert Web URL to API URL if needed
+            // Web: https://github.com/owner/repo
+            // API: https://api.github.com/repos/owner/repo
+            if (!str_contains($repoUrl, 'api.github.com')) {
+                $path = parse_url($repoUrl, PHP_URL_PATH);
+                $this->apiUrl = "https://api.github.com/repos" . $path;
+            } else {
+                $this->apiUrl = $repoUrl;
+            }
+
         } elseif (str_contains($repoUrl, 'gitlab.com')) {
             $this->platform = 'gitlab';
+            // GitLab conversion logic could be added here
+            $this->apiUrl = $repoUrl;
         } elseif (str_contains($repoUrl, 'bitbucket.org')) {
             $this->platform = 'bitbucket';
+            $this->apiUrl = $repoUrl;
         } else {
             // Generic Git API
             $this->platform = 'generic';
+            $this->apiUrl = $repoUrl;
         }
-
-        $this->apiUrl = $repoUrl?? 'github.com';
     }
 
     /**
